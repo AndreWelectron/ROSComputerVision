@@ -44,3 +44,9 @@ For this explanation, ROS2 should have already been installed. See ROS documenta
    ```
    ros2 bag play <name_rosbag>
    ```
+
+The read_rosbag.py script reads the data sent by the rosbag and saves it as frames in a specific folder.
+The split_frames.py script randomly extracts a percentage of the frames from a folder and copies them to another folder.
+The .... script trains the computer vision model using a pre-trained YOLOv11 model.
+The convert_rosbag_to_mp4.py script converts the rosbag file into a file that the machine can read without running ROS. In this case, an mp4 file.
+The vision_stream.py script loads the trained model and tests it using a video or streaming it with a camera.
