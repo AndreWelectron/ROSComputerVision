@@ -53,5 +53,5 @@ The vision_stream.py script loads the trained model and tests it using a video o
 
 Below are the results of the trained computer vision model  
 
-!(Screenshot from 2025-06-23 17-35-14.png)  
+![ComnputerVisionModel](Screenshot from 2025-06-23 17-35-14.png)
 
