@@ -19,3 +19,18 @@ For this explanation, ROS2 should have already been installed. See ROS documenta
    rosdep update
    rosdep install -i --from-path src --rosdistro $ROS_DISTRO --skip-keys=librealsense2 -y
    ```
+3. Then, build the new ROS package and create a source using the following commands:
+   ```
+   colcon build
+   ROS_DISTRO=<YOUR_SYSTEM_ROS_DISTRO> # set your ROS_DISTRO: iron, humble, foxy
+   source /opt/ros/$ROS_DISTRO/setup.bash
+   cd ~/ros2_ws
+   . install/local_setup.bash
+   ```
+
+4. To turn on the camera using ROS, use any of the following commands in a terminal:
+   ```
+   ros2 run realsense2_camera realsense2_camera_node
+   ros2 launch realsense2_camera rs_launch.py
+   ```
+   
