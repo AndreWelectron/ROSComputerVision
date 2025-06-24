@@ -53,5 +53,5 @@ The vision_stream.py script loads the trained model and tests it using a video o
 
 Below are the results of the trained computer vision model  
 
-!(https://github.com/AndreWelectron/ROSComputerVision/blob/main/Screenshot%20from%202025-06-23%2017-35-14.png)  
+!(Screenshot from 2025-06-23 17-35-14.png)  
 
