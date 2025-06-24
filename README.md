@@ -34,3 +34,13 @@ For this explanation, ROS2 should have already been installed. See ROS documenta
    ros2 launch realsense2_camera rs_launch.py
    ```
    
+5. To record the image data sent by the camera:
+   ```
+   ros2 bag record <topic_name>
+   ros2 bag record <topic_name1> <topic_name2>
+   ```
+
+6. To play recorded rosbag:
+   ```
+   ros2 bag play <name_rosbag>
+   ```
