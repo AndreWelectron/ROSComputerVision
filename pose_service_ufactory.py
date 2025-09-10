@@ -158,15 +158,15 @@ class PoseSubscriberClient(Node):
                     x = pose_list[0]
                     y = pose_list[1]
                     z = pose_list[2] 
-                    self.get_logger().info(f"Pose actual: x={x}, y={y}, z={z}")
+                    self.get_logger().info(f"Actual pose: x={x}, y={y}, z={z}")
 
-                    # Calcular nueva posición descendiendo 5mm
+                    #Calculate new pose going down 5mm
                     new_z_pose = z - 5.0
 
-                    # Enviar nuevo movimiento con menor velocidad
+                    #Send new move with less velocity
                     self.send_request(x, y, new_z_pose, 20)
                 else:
-                    self.get_logger().warn("robot_state is None, esperando mensaje...")
+                    self.get_logger().warn("robot_state is None, waiting message...")
                     time.sleep(0.1)
                 
             #Linear move up
