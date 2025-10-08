@@ -19,7 +19,7 @@ class InitialPoseClient(Node):
 
     def send_request(self, j1, j2, j3, j4, j5, j6):
         self.req.angles = (float(j1), float(j2), float(j3), float(j4), float(j5), float(j6))
-        self.req.speed = 0.70
+        self.req.speed = 0.50
         self.req.mvtime = 0.0
         self.req.wait = False
         self.req.timeout = -1.0
@@ -118,18 +118,49 @@ class PoseSubscriberClient(Node):
         self.already_executed = True  # Flag for executed detection
 
         try:
+            num_layers = 4              #Layers in container
+            z_layer_offset = 26         #Height z_layer_offset
+
+            layer = 4
+            z_layer = msg.z + layer * z_layer_offset
+            flag_layer = 0
+
             for col in [1,2]:
                 for idx in range(1,5):
                     if col == 1:
-                        self.handle_column_1(idx, msg.x, msg.y, msg.z)
+                        self.handle_column_1(idx, msg.x, msg.y, z_layer)
                     elif col== 2:
-                        self.handle_column_2(idx, msg.x, msg.y, msg.z)
+                        if layer > 2:
+                            z_layer_new = z_layer -15
+                            #z_layer = z_layer
+                            flag_layer = 1
+                        self.handle_column_2(idx, msg.x, msg.y, z_layer_new, flag_layer)
+            
+            """
+            #Auskommentieren!!!
+            for layer in range(num_layers):
+                z_layer = msg.z + layer * z_layer_offset
+
+                for col in [1,2]:
+                    for idx in range(1,5):
+                        if col == 1:
+                            self.handle_column_1(idx, msg.x, msg.y, z_layer)
+                            #print("pass... column1")
+                        elif col== 2:
+                            z_layer_new = z_layer 
+                            if layer > 2:
+                                z_layer_new = z_layer -15
+                                #z_layer = z_layer
+                                flag_layer = 1
+                            self.handle_column_2(idx, msg.x, msg.y, z_layer_new, flag_layer)
+            """
+            
 
             #Place box 9
-            self.handle_box_9(msg.x, msg.y, msg.z)
+            #self.handle_box_9(msg.x, msg.y, msg.z)
 
             #Place box 10
-            self.handle_box_10(msg.x, msg.y, msg.z)
+            #self.handle_box_10(msg.x, msg.y, msg.z)
 
         except Exception as e:
             self.get_logger().warn(f'Error transforming pose: {str(e)}')
@@ -173,7 +204,8 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
 
         #Move to pick box (down) state
-        self.move_pose_client.send_request(1.03, 0.96, 1.22, -0.11, 0.30, -0.50)
+        #(1.03, 0.96, 1.22, -0.11, 0.30, -0.50)
+        self.move_pose_client.send_request(1.03, 1.04, 1.26, -0.13, 0.26, -0.48)
 
         #Start vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(True)
@@ -197,7 +229,7 @@ class PoseSubscriberClient(Node):
         self.send_request(x, y, z, 3.14 , 0.04, 1.55, 50)
 
         y_goal = y - 46.0
-        y_intermediate = y_goal +10
+        y_intermediate = y_goal +14
         #Move above glide punkt
         self.send_request(x, y_intermediate, z, 3.14 , 0.04, 1.55, 50)
 
@@ -238,12 +270,13 @@ class PoseSubscriberClient(Node):
         #Move to pick box (up) state
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
 
-    def handle_column_2(self, idx, x, y, z):
+    def handle_column_2(self, idx, x, y, z, flag_layer):
         #Move to pick box (up) state for second column
         self.move_pose_client.send_request(0.99, 0.39, 1.31, -3.06, -0.97, -2.43)
         
         #Move to pick box (down) state for second column
-        self.move_pose_client.send_request(1.00, 0.99, 1.27, -2.93, -0.33, -2.57)
+        #(1.00, 0.99, 1.27, -2.93, -0.33, -2.57)
+        self.move_pose_client.send_request(0.99, 1.04, 1.28, -2.9, -0.29, -2.61)
 
         #Start vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(True)
@@ -263,34 +296,41 @@ class PoseSubscriberClient(Node):
         #Move to Anfangspunkt matrix
         self.send_request(x, y, z, -3.13, 0.08, 0.23, 80) #vel 50
 
-        y_goal = y + 46.0
+        y_goal = y + 49.0 #46
         z_new = z - 40 #CHECK!!!
         
         if idx == 1:
-            x_offset = x + 187
+            x_offset = x + 186 #187
         elif idx == 2:
             x_offset = x + 123  #x+124
         elif idx == 3:
             x_offset = x +59  #x+62
         else:
             x_offset = x - 4  # For j == 4 (nur x)
+        
+        if flag_layer ==1:
+            self.send_request(x_offset, y_goal, z, -3.13, 0.08, 0.23, 80) #vel 50
 
         #Move above goal position
         self.send_request(x_offset, y_goal, z_new, -3.13, 0.08, 0.23, 80) #vel 50
 
         #Rotate TCP in RX
-        self.send_request(x_offset, y_goal, z_new, -2.96, 0.08, 0.23, 80) #vel 50
+        self.send_request(x_offset, y_goal, z_new, -2.96, 0.08, 0.23, 50) #vel 50
 
-        z_goal = z_new -55
+        z_goal = z_new -55 
+        if flag_layer ==1:
+            z_goal = z_goal + 12
+            self.get_logger().info(f"Going down across z axis: {z_goal}")
         #Move slow to goal position (down)
-        self.send_request(x_offset, y_goal, z_goal, -2.96, 0.08, 0.23, 80) #vel 50
+        self.send_request(x_offset, y_goal, z_goal, -2.96, 0.08, 0.23, 50) #vel 50
 
         if idx ==4:
             x_push = x_offset + 43  #+37
             #push all boxes to final position
             self.send_request(x_push, y_goal, z_goal, -2.96, 0.08, 0.23, 80) #vel 50
-        
 
+        
+        
         #Stop vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(False)
         time.sleep(1.0)
@@ -303,6 +343,7 @@ class PoseSubscriberClient(Node):
                 break
             time.sleep(0.5)
         
+        
 
         #Move above goal position
         self.send_request(x_offset, y_goal, z_new, -3.13, 0.08, 0.23, 80) #vel 50
@@ -312,13 +353,14 @@ class PoseSubscriberClient(Node):
 
         #Move to pick box (up) state for second column
         self.move_pose_client.send_request(0.99, 0.39, 1.31, -3.06, -0.97, -2.43)
+        
 
     
     def handle_box_9(self,x, y, z):
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
 
         #Move to pick box (down) state
-        self.move_pose_client.send_request(1.03, 0.96, 1.22, -0.11, 0.30, -0.50)
+        self.move_pose_client.send_request(1.03, 1.04, 1.26, -0.13, 0.26, -0.48)
 
         #Start vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(True)
@@ -393,7 +435,7 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(0.99, 0.39, 1.31, -3.06, -0.97, -2.43)
 
         #Move to pick box (down) state for second column
-        self.move_pose_client.send_request(1.00, 0.99, 1.27, -2.93, -0.33, -2.57)
+        self.move_pose_client.send_request(0.99, 1.04, 1.28, -2.9, -0.29, -2.61)
 
         #Start vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(True)
