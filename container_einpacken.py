@@ -19,7 +19,7 @@ class InitialPoseClient(Node):
 
     def send_request(self, j1, j2, j3, j4, j5, j6):
         self.req.angles = (float(j1), float(j2), float(j3), float(j4), float(j5), float(j6))
-        self.req.speed = 0.80
+        self.req.speed = 0.50
         self.req.mvtime = 0.0
         self.req.wait = False
         self.req.timeout = -1.0
@@ -139,7 +139,7 @@ class PoseSubscriberClient(Node):
                         self.handle_column_2(idx, msg.x, msg.y, z_layer_new, flag_layer, layer)
 
             """
-
+            """
             #Auskommentieren!!!
             for layer in range(num_layers):
                 z_layer = msg.z + layer * z_layer_offset
@@ -156,10 +156,9 @@ class PoseSubscriberClient(Node):
                                 #z_layer = z_layer
                                 flag_layer = 1
                             self.handle_column_2(idx, msg.x, msg.y, z_layer_new, flag_layer, layer)
-            
-
+            """
             #Place box 9
-            #self.handle_box_9(msg.x, msg.y, msg.z)
+            self.handle_box_9(msg.x, msg.y, msg.z)
 
             #Place box 10
             #self.handle_box_10(msg.x, msg.y, msg.z)
@@ -360,8 +359,6 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(0.99, 0.39, 1.31, -3.06, -0.97, -2.43)
 
         
-        
-
     
     def handle_box_9(self,x, y, z):
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
@@ -388,32 +385,37 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(0.09, 0.63, 1.64, -0.05, 1.01, -1.43)
 
         #Move to Anfangspunkt matrix
-        self.send_request(x, y, z, 3.14 , 0.04, 1.55, 80) #vel 50
+        self.send_request(x, y, z, 3.14 , 0.04, 1.55, 50) #vel 50
 
         x_new_9 = x - 31
         #Move above insertion punkt
-        self.send_request(x_new_9, y, z, 3.14 , 0.04, 1.55, 80) #vel 50
+        self.send_request(x_new_9, y, z, 3.14 , 0.04, 1.55, 50) #vel 50
 
         #Rotate TCP to enter into columns
-        new_px = -2.76 #3.14 - 5.96
-        new_py = 0.01 #0.04 +0.005
-        new_pz = 1.64
-        self.send_request(x_new_9, y, z,new_px , new_py, new_pz, 80) #vel 50
+        new_px = -2.70 #3.14 - 5.96
+        new_py = 0.00 #0.04 +0.005
+        new_pz = 1.63
+        self.send_request(x_new_9, y, z,new_px , new_py, new_pz, 50) #vel 50
 
         #Move in x positive axis to align input position
-        x_input_position = 231.77
+        x_input_position = 232.92
         self.send_request(x_input_position, y, z,new_px , new_py, new_pz, 50) #vel 50
+        self.get_logger().info(f"Position to align to insertion point: {x_input_position}, {y}, {z}")
 
         #Move in z axis down
-        z_down_align = z - 87
+        z_down_align = z - 55
         self.send_request(x_input_position, y, z_down_align, new_px , new_py, new_pz, 50) #vel 50
 
+        #Move in z axis down again
+        z_down_align_2 = z_down_align - 32
+        self.send_request(x_input_position, y, z_down_align_2, new_px , new_py, new_pz, 50) #vel 50
+
         #Move back in y axis
-        y_back_wall = y - 55.8
-        self.send_request(x_input_position, y_back_wall, z_down_align, new_px , new_py, new_pz, 50) #vel 50
+        y_back_wall = y - 53.8 #-55.8
+        self.send_request(x_input_position, y_back_wall, z_down_align_2, new_px , new_py, new_pz, 50) #vel 50
 
         #Move down in goal position
-        z_goal = z_down_align -14.1
+        z_goal = z_down_align_2 -12.1 #14.1
         self.send_request(x_input_position, y_back_wall, z_goal ,new_px , new_py, new_pz, 50) #vel 50
 
         #Stop vacuum gripper
@@ -435,6 +437,7 @@ class PoseSubscriberClient(Node):
 
         #Move to pick box (up) state
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
+        
 
         
     def handle_box_10(self, x, y ,z):
@@ -463,20 +466,20 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(0.1, 0.23, 0.92, -3.14, -0.77, -3.28)
 
         #Move to Anfangspunkt matrix for second column
-        self.send_request(x, y, z, -3.13, 0.08, 0.23, 80) #vel 50
+        self.send_request(x, y, z, -3.13, 0.08, 0.23, 50) #vel 50
 
         #Rotate TCP to enter into 10 position
         new_py = 0.44 #0.08 + 0.36
-        self.send_request(x, y, z, -3.13, new_py, 0.23, 80) #vel 50
+        self.send_request(x, y, z, -3.13, new_py, 0.23, 50) #vel 50
 
         #Move above insertion position (in y-axis)
-        x_new = x + 3.60
-        y_new = y + 57 #48.68
-        self.send_request(x_new, y_new, z, -3.13, new_py, 0.23, 80)
+        x_new = x + 0.5 #3.60 1.0
+        y_new = y + 60 #57
+        self.send_request(x_new, y_new, z, -3.13, new_py, 0.23, 50)
 
         #Move above insertion position (in z-axis)
         z_new = z -51.83
-        self.send_request(x_new, y_new, z_new, -3.13, new_py, 0.23, 80)
+        self.send_request(x_new, y_new, z_new, -3.13, new_py, 0.23, 50)
 
         #Move down in negative z_axis 
         z_insertion = z_new - 35
@@ -512,15 +515,15 @@ class PoseSubscriberClient(Node):
         z_up = z_push_final + 10 #+10
         x_middle = x - 31
         y_middle = y + 47.5
-        self.send_request(x_middle, y_middle, z_up, -3.13, 0.08, 0.23, 80)
+        self.send_request(x_middle, y_middle, z_up, -3.13, 0.08, 0.23, 50)
 
         #Move to middle of box
         z_middle = z_push_final - 10
-        self.send_request(x_middle, y_middle, z_middle, -3.13, 0.08, 0.23, 80)
+        self.send_request(x_middle, y_middle, z_middle, -3.13, 0.08, 0.23, 50)
 
         #Move up
         z_up = z_push_final + 134
-        self.send_request(x_middle, y_middle, z_up, -3.13, new_py, 0.23, 80)
+        self.send_request(x_middle, y_middle, z_up, -3.13, new_py, 0.23, 50)
 
         #Move state to midpoint container for second column
         self.move_pose_client.send_request(0.1, 0.23, 0.92, -3.14, -0.77, -3.28)
