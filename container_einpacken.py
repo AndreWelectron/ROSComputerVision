@@ -19,7 +19,7 @@ class InitialPoseClient(Node):
 
     def send_request(self, j1, j2, j3, j4, j5, j6):
         self.req.angles = (float(j1), float(j2), float(j3), float(j4), float(j5), float(j6))
-        self.req.speed = 0.50
+        self.req.speed = 0.80 #0.50
         self.req.mvtime = 0.0
         self.req.wait = False
         self.req.timeout = -1.0
@@ -118,34 +118,41 @@ class PoseSubscriberClient(Node):
         self.already_executed = True  # Flag for executed detection
 
         try:
-            num_layers = 5              #Layers in container
+            num_layers = 2              #Layers in container
             z_layer_offset = 26         #Height z_layer_offset
             flag_layer = 0
 
-            #layer = 4
-            #z_layer = msg.z + layer * z_layer_offset
+            layer = 3
+            z_layer = msg.z + layer * z_layer_offset
 
-            """
+
             for col in [1,2]:
                 for idx in range(1,5): #(1,2)
                     if col == 1:
-                        #self.handle_column_1(idx, msg.x, msg.y, z_layer)
-                        print("pass... column1")
+                        self.handle_column_1(idx, msg.x, msg.y, z_layer)
+                        #print("pass... column1")
                     elif col== 2:
                         if layer > 2:
                             z_layer_new = z_layer -15
                             #z_layer = z_layer
                             flag_layer = 1
+                        else:
+                            z_layer_new = z_layer
                         self.handle_column_2(idx, msg.x, msg.y, z_layer_new, flag_layer, layer)
 
-            """
-            """
+            #Place box 9
+            self.handle_box_9(msg.x, msg.y, z_layer, layer)
+
+            #Place box 10
+            self.handle_box_10(msg.x, msg.y, z_layer, layer)
+
+            """            
             #Auskommentieren!!!
             for layer in range(num_layers):
                 z_layer = msg.z + layer * z_layer_offset
 
                 for col in [1,2]:
-                    for idx in range(1,5):
+                    for idx in range(1,5): #(1,5)
                         if col == 1:
                             self.handle_column_1(idx, msg.x, msg.y, z_layer)
                             #print("pass... column1")
@@ -156,12 +163,15 @@ class PoseSubscriberClient(Node):
                                 #z_layer = z_layer
                                 flag_layer = 1
                             self.handle_column_2(idx, msg.x, msg.y, z_layer_new, flag_layer, layer)
-            """
-            #Place box 9
-            self.handle_box_9(msg.x, msg.y, msg.z)
+                            #print("pass... column2")
+            
+                #Place box 9
+                self.handle_box_9(msg.x, msg.y, z_layer)
 
-            #Place box 10
-            #self.handle_box_10(msg.x, msg.y, msg.z)
+                #Place box 10
+                self.handle_box_10(msg.x, msg.y, z_layer)
+
+                """
 
         except Exception as e:
             self.get_logger().warn(f'Error transforming pose: {str(e)}')
@@ -200,6 +210,7 @@ class PoseSubscriberClient(Node):
         else:
             self.get_logger().error('Error calling the service.')
     
+
     def handle_column_1(self, idx, x, y, z):
         #Move to pick box (up) state
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
@@ -236,21 +247,26 @@ class PoseSubscriberClient(Node):
 
         z_new = z - 90 #CHECK!!!
         #Move (down) glide punkt
-        self.send_request(x, y_intermediate, z_new, 3.14 , 0.04, 1.55, 80)#50
+        self.send_request(x, y_intermediate, z_new, 3.14 , 0.04, 1.63, 80)#50
 
         if idx in [1, 2]:
             x_offset = x + 124
         elif idx == 3:
-            x_offset = x + 93
+            x_offset = x + 90 #+93
         else:
-            x_offset = x + 31 # For i == 4
+            x_offset = x + 28 # +31 For i == 4
 
         #Move to goal position after glide in x axis
-        self.send_request(x_offset, y_intermediate, z_new, 3.14 , 0.04, 1.55, 80)#50
+        self.send_request(x_offset, y_intermediate, z_new, 3.14 , 0.04, 1.63, 80)#50
 
         #Move to goal position after glide in y axis
-        self.send_request(x_offset, y_goal, z_new, 3.14 , 0.04, 1.55, 80)#50
+        self.send_request(x_offset, y_goal, z_new, 3.14 , 0.04, 1.63, 80)#50
 
+        #Move down in z axis 
+        z_new_down = z_new - 5
+        self.send_request(x_offset, y_goal, z_new_down, 3.14 , 0.04, 1.63, 80)#50
+
+        
         #Stop vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(False)
         time.sleep(1.0)
@@ -270,6 +286,7 @@ class PoseSubscriberClient(Node):
 
         #Move to pick box (up) state
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
+
 
     def handle_column_2(self, idx, x, y, z, flag_layer, layer):
         #Move to pick box (up) state for second column
@@ -334,7 +351,8 @@ class PoseSubscriberClient(Node):
         self.send_request(x_offset, y_goal, z_goal, -2.96, 0.08, 0.23, 50) #vel 50
 
         if idx ==4:
-            x_push = x_offset + 43  #+37
+            x_push = x_offset + 45  #+43
+            z_push = z_goal - 5
             #push all boxes to final position
             self.send_request(x_push, y_goal, z_goal, -2.96, 0.08, 0.23, 80) #vel 50     
         
@@ -357,10 +375,9 @@ class PoseSubscriberClient(Node):
 
         #Move to pick box (up) state for second column
         self.move_pose_client.send_request(0.99, 0.39, 1.31, -3.06, -0.97, -2.43)
-
-        
     
-    def handle_box_9(self,x, y, z):
+    
+    def handle_box_9(self,x, y, z, layer):
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
 
         #Move to pick box (down) state
@@ -385,52 +402,154 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(0.09, 0.63, 1.64, -0.05, 1.01, -1.43)
 
         #Move to Anfangspunkt matrix
-        self.send_request(x, y, z, 3.14 , 0.04, 1.55, 50) #vel 50
+        self.send_request(x, y, z, 3.14 , 0.04, 1.55, 80) #vel 50
 
         x_new_9 = x - 31
         #Move above insertion punkt
-        self.send_request(x_new_9, y, z, 3.14 , 0.04, 1.55, 50) #vel 50
+        self.send_request(x_new_9, y, z, 3.14 , 0.04, 1.55, 80) #vel 50
 
-        #Rotate TCP to enter into columns
-        new_px = -2.70 #3.14 - 5.96
-        new_py = 0.00 #0.04 +0.005
-        new_pz = 1.63
-        self.send_request(x_new_9, y, z,new_px , new_py, new_pz, 50) #vel 50
+        if layer >=1:
+            #Rotate TCP to enter into Columns
+            x_new_layer1 = x_new_9 + 20
+            new_px = -2.90 #3.14 - 5.96
+            new_py = 0.00 #0.04 +0.005
+            new_pz = 1.66
+            self.send_request(x_new_layer1, y, z,new_px , new_py, new_pz, 80) #vel 50
 
-        #Move in x positive axis to align input position
-        x_input_position = 232.92
-        self.send_request(x_input_position, y, z,new_px , new_py, new_pz, 50) #vel 50
-        self.get_logger().info(f"Position to align to insertion point: {x_input_position}, {y}, {z}")
+            #Align to insertion point
+            x_insertion = x_new_9 + 12
+            y_insertion = y -43.25
+            self.send_request(x_insertion, y_insertion, z,new_px , new_py, new_pz, 80) #vel 50
 
-        #Move in z axis down
-        z_down_align = z - 55
-        self.send_request(x_input_position, y, z_down_align, new_px , new_py, new_pz, 50) #vel 50
+            #Going down
+            z_insertion = z - 75.89
+            self.send_request(x_insertion, y_insertion, z_insertion, new_px , new_py, new_pz, 80) #vel 50
 
-        #Move in z axis down again
-        z_down_align_2 = z_down_align - 32
-        self.send_request(x_input_position, y, z_down_align_2, new_px , new_py, new_pz, 50) #vel 50
+            #Stop vacuum gripper
+            self.ufactory_control_vacuum_gripper.send_request(False)
+            time.sleep(1.0)
 
-        #Move back in y axis
-        y_back_wall = y - 53.8 #-55.8
-        self.send_request(x_input_position, y_back_wall, z_down_align_2, new_px , new_py, new_pz, 50) #vel 50
+            while True:
+                state_gripper = self.get_state_vacuum_gripper.send_request()
+                self.get_logger().info(f"Waiting gripper to change state value: {state_gripper}")
+                if state_gripper == 0:
+                    break
+                time.sleep(0.5)
 
-        #Move down in goal position
-        z_goal = z_down_align_2 -12.1 #14.1
-        self.send_request(x_input_position, y_back_wall, z_goal ,new_px , new_py, new_pz, 50) #vel 50
-
-        #Stop vacuum gripper
-        self.ufactory_control_vacuum_gripper.send_request(False)
-        time.sleep(1.0)
-
-        while True:
             state_gripper = self.get_state_vacuum_gripper.send_request()
-            self.get_logger().info(f"Waiting gripper to change state value: {state_gripper}")
-            if state_gripper == 0:
-                break
-            time.sleep(0.5)
+            self.get_logger().info(f"State vacuum gripper: {state_gripper}")
 
-        state_gripper = self.get_state_vacuum_gripper.send_request()
-        self.get_logger().info(f"State vacuum gripper: {state_gripper}")
+            #Going up
+            self.send_request(x_insertion, y_insertion, z, new_px , new_py, new_pz, 80) #vel 50
+
+            #Rotate TCP to push box
+            px_push = -2.84
+            py_push = 0.56
+            pz_push = 1.68
+            self.send_request(x_insertion, y_insertion, z, px_push , py_push, pz_push, 80) #vel 50
+
+            #Push box down
+            z_push = z - 100
+            y_push = y_insertion - 5.45
+            self.send_request(x_insertion, y_push, z_push, px_push , py_push, pz_push, 80) #vel 50
+
+            #Going up
+            self.send_request(x_insertion, y_push, z, px_push , py_push, pz_push, 80) #vel 50
+            self.get_logger().info(f"Position to going up: {x_insertion}, {y_push}, {z}")
+
+            #Rotate TCP for third push
+            y_push_3 = y_push + 48.7
+            z_before_push3 = z -61.2
+            px_push_3 = -2.98
+            py_push_3 = 0.01
+            pz_push_3 = 1.62
+            self.send_request(x_insertion, y_push_3, z_before_push3, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+            #Push box down
+            z_push_3 = z_before_push3 - 38
+            self.send_request(x_insertion, y_push_3, z_push_3, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+            #Move up after 3 push
+            self.send_request(x_insertion, y_push_3, z_before_push3, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+            #Move rechts for correction in y axis
+            y_rechts = y_push_3 +15.2
+            z_correction = z_before_push3 - 40 #-38.5
+            self.send_request(x_insertion, y_rechts, z_correction, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+            #Move links for correction in y axis
+            y_links = y_rechts - 7.8
+            self.send_request(x_insertion, y_links, z_correction, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+            #Move rechts for correction in y axis
+            self.send_request(x_insertion, y_rechts, z_correction, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+            #Move up after 3 push
+            self.send_request(x_insertion, y_push_3, z_before_push3, px_push_3 , py_push_3, pz_push_3, 80) #vel 50
+
+        else:
+            #Rotate TCP to enter into columns
+            new_px = -2.70 #3.14 - 5.96
+            new_py = 0.00 #0.04 +0.005
+            new_pz = 1.63
+            self.send_request(x_new_9, y, z,new_px , new_py, new_pz, 80) #vel 50
+
+            #Move in x positive axis to align input position
+            x_input_position = 232.92
+            self.send_request(x_input_position, y, z,new_px , new_py, new_pz, 80) #vel 50
+            self.get_logger().info(f"Position to align to insertion point: {x_input_position}, {y}, {z}")
+            
+            #Move in z axis down
+            z_down_align = z - 55
+            self.send_request(x_input_position, y, z_down_align, new_px , new_py, new_pz, 80) #vel 50
+
+            #Move in z axis down again
+            z_down_align_2 = z_down_align - 32
+            self.send_request(x_input_position, y, z_down_align_2, new_px , new_py, new_pz, 80) #vel 50
+
+            #Move back in y axis
+            y_back_wall = y - 53.8 #-55.8
+            self.send_request(x_input_position, y_back_wall, z_down_align_2, new_px , new_py, new_pz, 80) #vel 50
+
+            #Stop vacuum gripper
+            self.ufactory_control_vacuum_gripper.send_request(False)
+            time.sleep(1.0)
+
+            while True:
+                state_gripper = self.get_state_vacuum_gripper.send_request()
+                self.get_logger().info(f"Waiting gripper to change state value: {state_gripper}")
+                if state_gripper == 0:
+                    break
+                time.sleep(0.5)
+
+            state_gripper = self.get_state_vacuum_gripper.send_request()
+            self.get_logger().info(f"State vacuum gripper: {state_gripper}")
+
+            #Move 30mm in z+ axis
+            z_up_before_push= z_down_align_2 + 30
+            self.send_request(x_input_position, y_back_wall, z_up_before_push, new_px , new_py, new_pz, 80) #vel 50
+
+            #Move linear above push place
+            x_push = 235.8
+            y_push = 9.1
+            self.send_request(x_push, y_push, z_up_before_push, new_px , new_py, new_pz, 80) #vel 50
+
+            #Move down to push box9
+            z_push = z_up_before_push - 45
+            self.send_request(x_push, y_push, z_push, new_px , new_py, new_pz, 80) #vel 50
+
+            #Move up after push box9
+            self.send_request(x_push, y_push, z_up_before_push, new_px , new_py, new_pz, 80) #vel 50
+            self.get_logger().info(f"x_push: {x_push}, y_push: {y_push}, z_push: {z_up_before_push}")
+
+            #Move to second push point (up)
+            x_push_2= x_push - 9.0
+            y_push_2= y_push - 37.7
+            z_push_2= z_up_before_push - 41.4
+            self.send_request(x_push_2, y_push_2, z_up_before_push, new_px , new_py, new_pz, 80) #vel 50
+
+            #Move to second push point (down)
+            self.send_request(x_push_2, y_push_2, z_push_2, new_px , new_py, new_pz, 80) #vel 50
 
         #Move state to midpoint container
         self.move_pose_client.send_request(0.09, 0.63, 1.64, -0.05, 1.01, -1.43)
@@ -438,9 +557,8 @@ class PoseSubscriberClient(Node):
         #Move to pick box (up) state
         self.move_pose_client.send_request(1.03, 0.38, 1.29, -0.03, 0.95, -0.50)
         
-
-        
-    def handle_box_10(self, x, y ,z):
+     
+    def handle_box_10(self, x, y ,z, layer):
         #Move to pick box (up) state for second column
         self.move_pose_client.send_request(0.99, 0.39, 1.31, -3.06, -0.97, -2.43)
 
@@ -466,24 +584,25 @@ class PoseSubscriberClient(Node):
         self.move_pose_client.send_request(0.1, 0.23, 0.92, -3.14, -0.77, -3.28)
 
         #Move to Anfangspunkt matrix for second column
-        self.send_request(x, y, z, -3.13, 0.08, 0.23, 50) #vel 50
+        self.send_request(x, y, z, -3.13, 0.08, 0.23, 80) #vel 50
 
         #Rotate TCP to enter into 10 position
         new_py = 0.44 #0.08 + 0.36
-        self.send_request(x, y, z, -3.13, new_py, 0.23, 50) #vel 50
+        self.send_request(x, y, z, -3.13, new_py, 0.23, 80) #vel 50
 
         #Move above insertion position (in y-axis)
         x_new = x + 0.5 #3.60 1.0
-        y_new = y + 60 #57
-        self.send_request(x_new, y_new, z, -3.13, new_py, 0.23, 50)
+        y_new = y + 62 #+60
+        self.send_request(x_new, y_new, z, -3.13, new_py, 0.23, 80)
 
         #Move above insertion position (in z-axis)
         z_new = z -51.83
-        self.send_request(x_new, y_new, z_new, -3.13, new_py, 0.23, 50)
+        self.send_request(x_new, y_new, z_new, -3.13, new_py, 0.23, 80)
 
         #Move down in negative z_axis 
         z_insertion = z_new - 35
-        self.send_request(x_new, y_new, z_insertion, -3.13, new_py, 0.23, 50)
+        self.send_request(x_new, y_new, z_insertion, -3.13, new_py, 0.23, 80)
+        self.get_logger().info(f"Going to above position x_new, y_new, z_insertion: {x_new, y_new, z_insertion}")
 
         #Stop vacuum gripper
         self.ufactory_control_vacuum_gripper.send_request(False)
@@ -499,34 +618,54 @@ class PoseSubscriberClient(Node):
         state_gripper = self.get_state_vacuum_gripper.send_request()
         self.get_logger().info(f"State vacuum gripper: {state_gripper}")
 
-        #Move above position for push down function 
-        x_push = x_new - 21.81
-        y_push = y_new + 1.00
-        z_push = z_insertion + 67 #+87
+        if layer >= 1:
+            #Move above position and rotate to push down  
+            x_push = x_new - 24.8
+            y_push = y_new -8.2
+            z_push = z_insertion + 54.63 
 
-        self.send_request(x_push, y_push, z_push, -3.13, new_py, 0.23, 50)
+            self.send_request(x_push, y_push, z_push, -2.79, 0.34, 0.36, 80)
+            self.get_logger().info(f"Going to above position: {x_push, y_push, z_push}")
 
-        #Push down
-        z_push_final = z_push - 70 #+90
-        self.send_request(x_push, y_push, z_push_final, -3.13, new_py, 0.23, 50)
-        #self.get_logger().info(f"Pushing down box 10: {z_push_final}")
+            #Push down box 10
+            z_push_final = z_push - 72.2 #+90
+            self.send_request(x_push, y_push, z_push_final, -2.79, 0.34, 0.36, 80)
 
-        #Move up
-        z_up = z_push_final + 10 #+10
-        x_middle = x - 31
-        y_middle = y + 47.5
-        self.send_request(x_middle, y_middle, z_up, -3.13, 0.08, 0.23, 50)
+            #Move up
+            self.send_request(x_push, y_push, z_push, -2.79, 0.34, 0.36, 80)
 
-        #Move to middle of box
-        z_middle = z_push_final - 10
-        self.send_request(x_middle, y_middle, z_middle, -3.13, 0.08, 0.23, 50)
+        else:
+            #Move above position for push down function 
+            x_push = x_new - 21.81
+            y_push = y_new + 1.00
+            z_push = z_insertion + 67 #+87
 
-        #Move up
-        z_up = z_push_final + 134
-        self.send_request(x_middle, y_middle, z_up, -3.13, new_py, 0.23, 50)
+            self.send_request(x_push, y_push, z_push, -3.13, new_py, 0.23, 80)
+            self.get_logger().info(f"Going to above position: {x_push, y_push, z_push}")
+ 
+            #Push down
+            z_push_final = z_push - 68 #+90
+            self.send_request(x_push, y_push, z_push_final, -3.13, new_py, 0.23, 80)
+            self.get_logger().info(f"Pushing down box 10: {z_push_final}")
+            
+            #Move up
+            z_up = z_push_final + 10 #+10
+            x_middle = x - 31
+            y_middle = y + 47.5
+            self.send_request(x_middle, y_middle, z_up, -3.13, 0.08, 0.23, 80)
+
+            #Move to middle of box
+            z_middle = z_push_final - 10
+            self.send_request(x_middle, y_middle, z_middle, -3.13, 0.08, 0.23, 80)
+
+            #Move up
+            z_up = z_push_final + 134
+            self.send_request(x_middle, y_middle, z_up, -3.13, new_py, 0.23, 80)
 
         #Move state to midpoint container for second column
         self.move_pose_client.send_request(0.1, 0.23, 0.92, -3.14, -0.77, -3.28)
+        
+        
 
 
 def callback(future):
